@@ -1,0 +1,53 @@
+name: Unpack site ZIP (web-v5)
+
+on:
+  push:
+    paths:
+      - 'web-v5.zip'   # Must match the ZIP filename exactly
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install unzip if missing
+        run: |
+          if ! command -v unzip &> /dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y unzip
+          fi
+
+      - name: List repository before extraction
+        run: ls -la
+
+      - name: Unzip site archive
+        run: |
+          ZIP='web-v5.zip'
+          if [ -f "$ZIP" ]; then
+            mkdir -p extracted
+            unzip -o "$ZIP" -d extracted
+            rsync -a --remove-source-files extracted/ .
+            echo "Extracted all files from $ZIP"
+          else
+            echo "ZIP not found: $ZIP"
+            exit 0
+          fi
+
+      - name: List contents after extraction
+        run: ls -la
+
+      - name: Commit extracted files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add --all
+          git commit -m "Auto-unpacked web-v5.zip into repository" || echo "No changes to commit"
+          git push
