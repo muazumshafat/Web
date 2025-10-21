@@ -1,0 +1,1 @@
+KYN web v5 - full package. Replace placeholder images in assets/img with your real images. Upload to GitHub Pages.
