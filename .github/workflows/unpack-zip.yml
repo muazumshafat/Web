@@ -1,0 +1,48 @@
+name: Unpack site ZIP (v5-auto-extract)
+
+# Run whenever the ZIP is uploaded or changed
+on:
+  push:
+    paths:
+      - 'web-v5.zip'
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: List repo before extraction
+        run: ls -la
+
+      - name: Unzip site archive if present
+        run: |
+          ZIP='web-v5.zip'
+          if [ -f "$ZIP" ]; then
+            echo "Unzipping $ZIP ..."
+            mkdir -p extracted
+            unzip -o "$ZIP" -d extracted
+            rsync -a --remove-source-files extracted/ .
+            echo "Extraction complete."
+          else
+            echo "ZIP not found: $ZIP"
+            exit 0
+          fi
+
+      - name: Show extracted contents
+        run: ls -la
+
+      - name: Commit and push extracted files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add --all
+          git commit -m "Auto-unpacked web-v5.zip into main site" || echo "No changes to commit"
+          git push
